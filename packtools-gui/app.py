@@ -138,15 +138,16 @@ class MainWindow(QtGui.QMainWindow):
     def showOpenXMLDialog(self):
         fname = QtGui.QFileDialog.getOpenFileName(self, 'Open XML file', '.', "XML Files (*.xml)")
         with open(fname, 'r') as f:
-            # data = f.read().decode('utf-8')
             results, exc = packtools_wrapper.analyze_xml(f)
             if results:
                 self.editor.setText(results['annotations'].decode('utf-8'))
 
     def showOpenURLDialog(self):
-        text, ok = QtGui.QInputDialog.getText(self, 'Input URL Dialog', 'Enter valid URL:')
+        url, ok = QtGui.QInputDialog.getText(self, 'Input URL Dialog', 'Enter valid URL:')
         if ok:
-            self.editor.setText(str(text))
+            results, exc = packtools_wrapper.analyze_xml(str(url))
+            if results:
+                self.editor.setText(results['annotations'].decode('utf-8'))
 
 def main():
     app = QtGui.QApplication(sys.argv)
