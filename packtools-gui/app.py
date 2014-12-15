@@ -72,12 +72,23 @@ class SimpleXMLEditor(QsciScintilla):
 
 class MainWindow(QtGui.QMainWindow):
 
+    new_xml_input_signal = QtCore.pyqtSignal(dict, name="new_xml_input_signal")
+
     def __init__(self):
         super(MainWindow, self).__init__()
         self.initUI()
 
+    @QtCore.pyqtSlot(dict)
+    def analyze_xml_callback(self, params):
+        if params.has_key('xml_source'):
+            results, exc = packtools_wrapper.analyze_xml(params['xml_source'])
+            if results:
+                self.populateEditor(results['annotations'])
+            if exc:
+                self.populateEditor(str(exc))
+
     def initUI(self):
-        #self.editor = QtGui.QTextEdit()
+
         self.editor = SimpleXMLEditor(parent=self)
         self.setCentralWidget(self.editor)
 
@@ -113,6 +124,8 @@ class MainWindow(QtGui.QMainWindow):
         toolbar.addAction(openURL)
         toolbar.addAction(exitAction)
 
+        self.new_xml_input_signal.connect(self.analyze_xml_callback)
+
         self.resize(800, 600)
         self.center()
         self.setWindowTitle('Packtools GUI v0.1')
@@ -138,16 +151,15 @@ class MainWindow(QtGui.QMainWindow):
     def showOpenXMLDialog(self):
         fname = QtGui.QFileDialog.getOpenFileName(self, 'Open XML file', '.', "XML Files (*.xml)")
         with open(fname, 'r') as f:
-            results, exc = packtools_wrapper.analyze_xml(f)
-            if results:
-                self.editor.setText(results['annotations'].decode('utf-8'))
+            self.new_xml_input_signal.emit({'xml_source': f})
 
     def showOpenURLDialog(self):
         url, ok = QtGui.QInputDialog.getText(self, 'Input URL Dialog', 'Enter valid URL:')
         if ok:
-            results, exc = packtools_wrapper.analyze_xml(str(url))
-            if results:
-                self.editor.setText(results['annotations'].decode('utf-8'))
+            self.new_xml_input_signal.emit({'xml_source': str(url)})
+
+    def populateEditor(self, text_content, decode_as='utf-8'):
+        self.editor.setText(text_content.decode(decode_as))
 
 def main():
     app = QtGui.QApplication(sys.argv)
